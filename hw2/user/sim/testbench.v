@@ -1,4 +1,5 @@
-`timescale 1ns / 1ps
+`timescale 1ns / 100ps
+
 
 module tb_top;
     reg clk;                 // 100MHz时钟信号
@@ -8,7 +9,25 @@ module tb_top;
     reg dir_set;             // 方向设置
     wire [7:0] led;          // 输出到LED
 
-    // 实例化顶层模块
+    task set_clk_freq(input integer freq);
+    begin
+        clk=0;
+        forever #freq clk=~clk;
+    end
+    endtask
+     
+    task set_led_pattern(input integer num);
+        begin
+            #1000000 
+            rst = 0; // 
+            button = 1; 
+            #1000000000 freq_set = num; // 10Hz
+            #1000000 
+            button = 0; // 启动
+            rst = 1; // 复位
+        end
+    endtask
+    // 实例化顶层模�??
     top uut (
         .clk(clk),
         .rst(rst),
@@ -17,51 +36,29 @@ module tb_top;
         .dir_set(dir_set),
         .led(led)
     );
-
-    // 时钟生成
+    
     initial begin
-        clk = 0;
-        forever #5 clk = ~clk; // 100MHz时钟周期
+        set_clk_freq(10); // 设置时钟频率为100MHz
     end
 
     // 测试流程
     initial begin
-        // 初始化信号
-        rst = 1;
-        button = 0;
-        freq_set = 2'b00; // 初始频率设置为100Hz
-        dir_set = 0;      // 初始方向设置
+        // 初始化信�???
+        rst = 1;          // 复位信号
+        button = 0;       // 启停按钮初始�???0
+        freq_set = 2'b00; // 初始频率设置�???100Hz
+        dir_set = 0;      // 初始方向设置为右
+        
+        set_led_pattern(2'b00); // 设置LED输出模式为10Hz
+        set_led_pattern(2'b01); // 设置LED输出模式为100Hz
+        set_led_pattern(2'b10); // 设置LED输出模式为4Hz
+        set_led_pattern(2'b11); // 设置LED输出模式为2Hz
 
-        // 复位
-        #10 rst = 0;
-
-        // 清晰地展示不同频率的测试
-        // 1. 测试100Hz
-        #10 freq_set = 2'b00; // 设置频率为100Hz
-        #10 button = 1; // 切换到运行状态
-        #10 button = 0; // 释放按钮
-        #2000; // 观察100Hz输出（2000ns大约为20个周期）
-
-        // 2. 测试10Hz
-        #10 freq_set = 2'b01; // 设置频率为10Hz
-        #10 button = 1; // 切换到运行状态
-        #10 button = 0; // 释放按钮
-        #10000; // 观察10Hz输出（10000ns大约为100个周期）
-
-        // 3. 测试4Hz
-        #10 freq_set = 2'b10; // 设置频率为4Hz
-        #10 button = 1; // 切换到运行状态
-        #10 button = 0; // 释放按钮
-        #25000; // 观察4Hz输出（25000ns大约为250个周期）
-
-        // 4. 测试2Hz
-        #10 freq_set = 2'b11; // 设置频率为2Hz
-        #10 button = 1; // 切换到运行状态
-        #10 button = 0; // 释放按钮
-        #50000; // 观察2Hz输出（50000ns大约为500个周期）
-
-        // 结束仿真
-        #10 $finish;
+        #10
+        button = 1; // 启动
+        #1000000000 dir_set = 1; // 方向设置为左
+        
+        #1000 $stop;
     end
 
     // 监视LED输出
@@ -69,4 +66,13 @@ module tb_top;
         $monitor("Time: %0t | LED: %b | freq_set: %b | dir_set: %b", $time, led, freq_set, dir_set);
     end
 
+    // 计数器最大值计算
+    initial begin
+        // 计算不同频率下的计数器最大值
+        $display("频率设置  |  计数器最大�??  |  计算过程");
+        $display("100Hz     |   999999       |  100MHz/100Hz - 1 = 1000000 - 1");
+        $display("10Hz      |   9999999      |  100MHz/10Hz - 1 = 10000000 - 1");
+        $display("4Hz       |   24999999     |  100MHz/4Hz - 1 = 25000000 - 1");
+        $display("2Hz       |   49999999     |  100MHz/2Hz - 1 = 50000000 - 1");
+    end
 endmodule
